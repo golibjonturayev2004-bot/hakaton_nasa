@@ -104,7 +104,7 @@ const testOpenAQ = async () => {
   return response;
 };
 
-// Test Weather.gov (no API key required)
+// Test Weather.gov (completely free, no configuration needed)
 const testWeatherGov = async () => {
   const response = await axios.get(
     'https://api.weather.gov/points/40.7128,-74.0060',

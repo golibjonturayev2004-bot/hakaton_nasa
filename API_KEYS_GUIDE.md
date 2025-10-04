@@ -36,8 +36,9 @@
 
 ### 5. Weather.gov API
 **Endpoint**: `https://api.weather.gov/`
-**Token**: No token required (free)
+**Token**: No token required (completely free)
 **Rate limit**: 1000 requests/day
+**Note**: Works immediately without any configuration
 
 ## 📝 Environment Variables Setup
 
@@ -141,13 +142,13 @@ curl "https://www.airnowapi.org/aq/observation/zipCode/current/?format=applicati
 
 ## 📊 Data Sources Summary
 
-| Source | Type | Cost | Rate Limit | Coverage |
-|--------|------|------|------------|----------|
-| NASA Earthdata | Satellite | Free | 1000/day | Global |
-| OpenWeatherMap | Weather | Free/Paid | 1000/day | Global |
-| AirNow | Air Quality | Free | 1000/day | US |
-| OpenAQ | Air Quality | Free | 1000/day | Global |
-| Weather.gov | Weather | Free | 1000/day | US |
+| Source | Type | Cost | Rate Limit | Coverage | API Key Required |
+|--------|------|------|------------|----------|------------------|
+| NASA Earthdata | Satellite | Free | 1000/day | Global | ✅ Yes |
+| OpenWeatherMap | Weather | Free/Paid | 1000/day | Global | ✅ Yes |
+| AirNow | Air Quality | Free | 1000/day | US | ✅ Yes |
+| OpenAQ | Air Quality | Free | 1000/day | Global | ✅ Yes |
+| Weather.gov | Weather | Free | 1000/day | US | ❌ No |
 
 ## 🔒 Security Notes
 
