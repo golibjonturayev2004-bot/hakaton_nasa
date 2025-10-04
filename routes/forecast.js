@@ -14,6 +14,45 @@ const weatherService = new WeatherService();
 forecastService.initializeModels();
 
 /**
+ * GET /api/forecast
+ * Get air quality forecast (root route)
+ */
+router.get('/', async (req, res) => {
+  try {
+    const { lat, lon, hours = 24 } = req.query;
+    
+    if (!lat || !lon) {
+      return res.status(400).json({ 
+        error: 'Latitude and longitude are required' 
+      });
+    }
+
+    const data = await forecastService.generateForecasts({
+      lat: parseFloat(lat), 
+      lng: parseFloat(lon),
+      hours: parseInt(hours)
+    });
+    
+    res.json({
+      success: true,
+      data,
+      parameters: {
+        lat: parseFloat(lat),
+        lon: parseFloat(lon),
+        hours: parseInt(hours)
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error fetching forecast data:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch forecast data',
+      message: error.message 
+    });
+  }
+});
+
+/**
  * GET /api/forecast/comprehensive
  * Get comprehensive air quality forecast
  */

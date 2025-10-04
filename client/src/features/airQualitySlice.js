@@ -9,7 +9,11 @@ export const fetchAirQualityData = createAsyncThunk(
       const response = await axios.get(`/api/air-quality?lat=${location.lat}&lon=${location.lon}`);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.statusText || 
+                          error.message || 
+                          'Failed to fetch air quality data';
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -21,7 +25,11 @@ export const fetchTempoData = createAsyncThunk(
       const response = await axios.get(`/api/tempo?lat=${location.lat}&lon=${location.lon}`);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.statusText || 
+                          error.message || 
+                          'Failed to fetch TEMPO data';
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -33,7 +41,11 @@ export const fetchWeatherData = createAsyncThunk(
       const response = await axios.get(`/api/weather?lat=${location.lat}&lon=${location.lon}`);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.statusText || 
+                          error.message || 
+                          'Failed to fetch weather data';
+      return rejectWithValue(errorMessage);
     }
   }
 );

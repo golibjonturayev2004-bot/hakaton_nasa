@@ -20,6 +20,10 @@ const ForecastService = require('./services/ForecastService');
 const NotificationService = require('./services/NotificationService');
 
 const app = express();
+
+// Trust proxy for rate limiting
+app.set('trust proxy', 1);
+
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {

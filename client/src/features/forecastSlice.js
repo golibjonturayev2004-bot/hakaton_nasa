@@ -10,7 +10,11 @@ export const fetchForecast = createAsyncThunk(
       const response = await axios.get(`/api/forecast?lat=${lat}&lon=${lon}&hours=${hours}`);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.statusText || 
+                          error.message || 
+                          'Failed to fetch forecast data';
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -35,7 +39,11 @@ export const fetchComprehensiveForecast = createAsyncThunk(
       const response = await axios.get(`/api/forecast/comprehensive?lat=${lat}&lon=${lon}&hours=${hours}`);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.statusText || 
+                          error.message || 
+                          'Failed to fetch comprehensive forecast';
+      return rejectWithValue(errorMessage);
     }
   }
 );

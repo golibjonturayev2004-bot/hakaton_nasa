@@ -5,6 +5,43 @@ const WeatherService = require('../services/WeatherService');
 const weatherService = new WeatherService();
 
 /**
+ * GET /api/weather
+ * Get current weather data (root route)
+ */
+router.get('/', async (req, res) => {
+  try {
+    const { lat, lon } = req.query;
+    
+    if (!lat || !lon) {
+      return res.status(400).json({ 
+        error: 'Latitude and longitude are required' 
+      });
+    }
+
+    const data = await weatherService.fetchCurrentWeather({
+      lat: parseFloat(lat), 
+      lng: parseFloat(lon)
+    });
+    
+    res.json({
+      success: true,
+      data,
+      parameters: {
+        lat: parseFloat(lat),
+        lon: parseFloat(lon)
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error fetching weather data:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch weather data',
+      message: error.message 
+    });
+  }
+});
+
+/**
  * GET /api/weather/current
  * Get current weather data
  */

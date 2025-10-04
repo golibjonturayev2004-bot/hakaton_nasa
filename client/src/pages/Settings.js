@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings, MapPin, Bell, Database, Cloud } from 'lucide-react';
+import { MapPin, Bell, Database, Cloud } from 'lucide-react';
 
 const SettingsPage = () => {
   return (

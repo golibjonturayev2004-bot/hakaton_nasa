@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { 
   fetchAirQualityData, 
   fetchTempoData, 
-  fetchWeatherData,
-  setLocation 
+  fetchWeatherData
 } from '../features/airQualitySlice';
 import { fetchComprehensiveForecast } from '../features/forecastSlice';
 import { initializeSocketConnection } from '../features/notificationSlice';
@@ -35,6 +34,26 @@ const Dashboard = () => {
   
   const [autoRefresh, setAutoRefresh] = useState(true);
 
+  const fetchData = useCallback(() => {
+    dispatch(fetchAirQualityData({ 
+      lat: location.lat, 
+      lon: location.lon 
+    }));
+    dispatch(fetchTempoData({ 
+      lat: location.lat, 
+      lon: location.lon 
+    }));
+    dispatch(fetchWeatherData({ 
+      lat: location.lat, 
+      lon: location.lon 
+    }));
+    dispatch(fetchComprehensiveForecast({ 
+      lat: location.lat, 
+      lon: location.lon,
+      hours: 24
+    }));
+  }, [dispatch, location.lat, location.lon]);
+
   useEffect(() => {
     // Initialize socket connection
     dispatch(initializeSocketConnection());
@@ -50,27 +69,7 @@ const Dashboard = () => {
     }, 300000); // 5 minutes
 
     return () => clearInterval(interval);
-  }, [dispatch, autoRefresh]);
-
-  const fetchData = () => {
-    dispatch(fetchAirQualityData({ 
-      lat: location.lat, 
-      lng: location.lng 
-    }));
-    dispatch(fetchTempoData({ 
-      lat: location.lat, 
-      lng: location.lng 
-    }));
-    dispatch(fetchWeatherData({ 
-      lat: location.lat, 
-      lng: location.lng 
-    }));
-    dispatch(fetchComprehensiveForecast({ 
-      lat: location.lat, 
-      lng: location.lng,
-      hours: 24
-    }));
-  };
+  }, [dispatch, autoRefresh, fetchData]);
 
   const getAQIColor = (aqi) => {
     if (aqi <= 50) return 'text-green-600 bg-green-100';
@@ -168,7 +167,7 @@ const Dashboard = () => {
           {/* Location */}
           <div className="mt-4 flex items-center text-gray-600">
             <MapPin className="w-4 h-4 mr-2" />
-            {location.name} ({location.lat.toFixed(4)}, {location.lng.toFixed(4)})
+            {location.name} ({location.lat.toFixed(4)}, {location.lon.toFixed(4)})
           </div>
         </div>
 
@@ -178,7 +177,9 @@ const Dashboard = () => {
               <AlertTriangle className="w-5 h-5 text-red-400 mr-3" />
               <div>
                 <h3 className="text-sm font-medium text-red-800">Error</h3>
-                <p className="text-sm text-red-700 mt-1">{error}</p>
+                <p className="text-sm text-red-700 mt-1">
+                  {typeof error === 'string' ? error : JSON.stringify(error)}
+                </p>
               </div>
             </div>
           </div>

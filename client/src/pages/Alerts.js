@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, Bell, Settings, Mail, Phone } from 'lucide-react';
+import { AlertTriangle, Bell, Mail, Phone } from 'lucide-react';
 
 const Alerts = () => {
   return (

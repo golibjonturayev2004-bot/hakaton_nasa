@@ -1,8 +1,8 @@
 import { configureStore } from '@reduxjs/toolkit';
-import airQualityReducer from './features/airQualitySlice';
-import forecastReducer from './features/forecastSlice';
-import notificationReducer from './features/notificationSlice';
-import mapReducer from './features/mapSlice';
+import airQualityReducer from '../features/airQualitySlice';
+import forecastReducer from '../features/forecastSlice';
+import notificationReducer from '../features/notificationSlice';
+import mapReducer from '../features/mapSlice';
 
 export const store = configureStore({
   reducer: {
@@ -19,5 +19,3 @@ export const store = configureStore({
     }),
 });
 
-export type RootState = ReturnType<typeof store.getState>;
-export type AppDispatch = typeof store.dispatch;

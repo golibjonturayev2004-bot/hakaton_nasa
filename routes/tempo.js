@@ -7,6 +7,43 @@ const tempoService = new TempoDataService();
 const airQualityService = new AirQualityService();
 
 /**
+ * GET /api/tempo
+ * Get current TEMPO data for a location (root route)
+ */
+router.get('/', async (req, res) => {
+  try {
+    const { lat, lon } = req.query;
+    
+    if (!lat || !lon) {
+      return res.status(400).json({ 
+        error: 'Latitude and longitude are required' 
+      });
+    }
+
+    const data = await tempoService.getRealTimeData(
+      parseFloat(lat), 
+      parseFloat(lon)
+    );
+    
+    res.json({
+      success: true,
+      data,
+      parameters: {
+        lat: parseFloat(lat),
+        lon: parseFloat(lon)
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error fetching TEMPO data:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch TEMPO data',
+      message: error.message 
+    });
+  }
+});
+
+/**
  * GET /api/tempo/current
  * Get current TEMPO data for a location
  */

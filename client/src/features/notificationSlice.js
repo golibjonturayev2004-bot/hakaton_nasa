@@ -41,13 +41,9 @@ export const updateNotificationSettings = createAsyncThunk(
 export const initializeSocketConnection = createAsyncThunk(
   'notifications/initializeSocket',
   async (_, { rejectWithValue }) => {
-    try {
-      // This would initialize Socket.IO connection
-      // For now, return a mock response
-      return { connected: true, socketId: 'mock-socket-id' };
-    } catch (error) {
-      return rejectWithValue(error.message);
-    }
+    // This would initialize Socket.IO connection
+    // For now, return a mock response
+    return { connected: true, socketId: 'mock-socket-id' };
   }
 );
 

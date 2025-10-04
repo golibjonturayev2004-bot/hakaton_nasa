@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, BarChart3, AlertTriangle, Settings } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 
 const MapView = () => {
   return (
