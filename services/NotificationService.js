@@ -16,7 +16,7 @@ class NotificationService {
         O3: { warning: 100, critical: 200 },
         SO2: { warning: 60, critical: 150 },
         HCHO: { warning: 20, critical: 50 },
-        PM2.5: { warning: 35, critical: 55 },
+        'PM2.5': { warning: 35, critical: 55 },
         PM10: { warning: 154, critical: 254 }
       }
     };
@@ -420,6 +420,24 @@ class NotificationService {
       subscription.preferences = { ...subscription.preferences, ...preferences };
       console.log(`Updated preferences for user ${userId}`);
     }
+  }
+
+  /**
+   * Get pollutant threshold for alerts
+   * @param {string} pollutant - Pollutant name
+   * @returns {number} Threshold value
+   */
+  getPollutantThreshold(pollutant) {
+    const thresholds = {
+      'NO2': 40,
+      'O3': 100,
+      'SO2': 60,
+      'HCHO': 20,
+      'PM2.5': 35,
+      'PM10': 154
+    };
+    
+    return thresholds[pollutant] || 50;
   }
 
   /**
