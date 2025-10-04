@@ -88,7 +88,7 @@ const airQualitySlice = createSlice({
       })
       .addCase(fetchAirQualityData.fulfilled, (state, action) => {
         state.loading = false;
-        state.currentData = action.payload;
+        state.currentData = action.payload.data;
         state.lastUpdated = new Date().toISOString();
       })
       .addCase(fetchAirQualityData.rejected, (state, action) => {
@@ -102,7 +102,7 @@ const airQualitySlice = createSlice({
       })
       .addCase(fetchTempoData.fulfilled, (state, action) => {
         state.loading = false;
-        state.tempoData = action.payload;
+        state.tempoData = action.payload.data;
       })
       .addCase(fetchTempoData.rejected, (state, action) => {
         state.loading = false;
@@ -115,7 +115,7 @@ const airQualitySlice = createSlice({
       })
       .addCase(fetchWeatherData.fulfilled, (state, action) => {
         state.loading = false;
-        state.weatherData = action.payload;
+        state.weatherData = action.payload.data;
       })
       .addCase(fetchWeatherData.rejected, (state, action) => {
         state.loading = false;

@@ -11,37 +11,37 @@ A real-time air quality monitoring application powered by NASA TEMPO satellite d
 ### Installation
 
 1. Install dependencies:
-```bash
-npm install
-cd client
-npm install
-```
+   ```bash
+   npm install
+   cd client
+   npm install
+   ```
 
 2. Set up environment variables:
-```bash
+   ```bash
 # Copy the example environment file
-cp env.example .env
+   cp env.example .env
 
 # Edit .env file with your API keys
 # Add your NASA API key and other required keys
-```
+   ```
 
 3. Start the application:
 
 **Terminal 1 - Backend Server:**
-```bash
+   ```bash
 npm start
 ```
-
+   
 **Terminal 2 - Frontend Client:**
 ```bash
-cd client
-npm start
-```
+   cd client
+   npm start
+   ```
 
 ### Access the Application
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:5000
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:5000
 
 ## Project Structure
 

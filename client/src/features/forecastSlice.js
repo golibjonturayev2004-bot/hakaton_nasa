@@ -36,7 +36,7 @@ export const fetchComprehensiveForecast = createAsyncThunk(
   async (params, { rejectWithValue }) => {
     try {
       const { lat, lon, hours = 24 } = params;
-      const response = await axios.get(`/api/forecast/comprehensive?lat=${lat}&lon=${lon}&hours=${hours}`);
+      const response = await axios.get(`/api/forecast?lat=${lat}&lon=${lon}&hours=${hours}`);
       return response.data;
     } catch (error) {
       const errorMessage = error.response?.data?.message || 
@@ -86,7 +86,7 @@ const forecastSlice = createSlice({
       })
       .addCase(fetchForecast.fulfilled, (state, action) => {
         state.loading = false;
-        state.forecastData = action.payload;
+        state.forecastData = action.payload.data;
         state.lastUpdated = new Date().toISOString();
       })
       .addCase(fetchForecast.rejected, (state, action) => {
@@ -100,7 +100,7 @@ const forecastSlice = createSlice({
       })
       .addCase(fetchWeatherData.fulfilled, (state, action) => {
         state.loading = false;
-        state.weatherData = action.payload;
+        state.weatherData = action.payload.data;
       })
       .addCase(fetchWeatherData.rejected, (state, action) => {
         state.loading = false;
@@ -113,7 +113,7 @@ const forecastSlice = createSlice({
       })
       .addCase(fetchComprehensiveForecast.fulfilled, (state, action) => {
         state.loading = false;
-        state.comprehensiveForecast = action.payload;
+        state.comprehensiveForecast = action.payload.data;
         state.lastUpdated = new Date().toISOString();
       })
       .addCase(fetchComprehensiveForecast.rejected, (state, action) => {

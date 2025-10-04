@@ -52,7 +52,8 @@ class TempoDataService {
       return processedData;
     } catch (error) {
       console.error('Error fetching TEMPO data:', error.message);
-      throw new Error('Failed to fetch TEMPO satellite data');
+      // Return mock data when external API fails
+      return this.getMockTempoData(params);
     }
   }
 
@@ -203,6 +204,65 @@ class TempoDataService {
       spatialCoverage: 'Continental US, Canada, Mexico',
       dataLatency: 'Near real-time',
       lastUpdate: new Date().toISOString()
+    };
+  }
+
+  /**
+   * Get mock TEMPO data when external API fails
+   * @param {Object} params - Query parameters
+   * @returns {Object} Mock TEMPO data
+   */
+  getMockTempoData(params) {
+    const { lat, lng } = params;
+    
+    return {
+      timestamp: new Date().toISOString(),
+      location: {
+        lat: parseFloat(lat),
+        lng: parseFloat(lng)
+      },
+      pollutants: {
+        NO2: {
+          concentration: Math.random() * 50 + 10,
+          unit: 'ppb',
+          quality: 'moderate'
+        },
+        O3: {
+          concentration: Math.random() * 80 + 20,
+          unit: 'ppb',
+          quality: 'good'
+        },
+        SO2: {
+          concentration: Math.random() * 20 + 5,
+          unit: 'ppb',
+          quality: 'good'
+        },
+        HCHO: {
+          concentration: Math.random() * 15 + 3,
+          unit: 'ppb',
+          quality: 'moderate'
+        }
+      },
+      aerosolOpticalDepth: {
+        value: Math.random() * 0.5 + 0.1,
+        unit: 'dimensionless',
+        quality: 'good'
+      },
+      dataQuality: {
+        confidence: 'medium',
+        resolution: '10km',
+        coverage: 'partial',
+        note: 'Mock data - external API unavailable'
+      },
+      metadata: {
+        source: 'TEMPO Satellite (Mock)',
+        region: 'North America',
+        resolution: '10km',
+        temporalResolution: '15 minutes',
+        spatialCoverage: 'Continental US, Canada, Mexico',
+        dataLatency: 'Near real-time',
+        lastUpdate: new Date().toISOString()
+      }
     };
   }
 }

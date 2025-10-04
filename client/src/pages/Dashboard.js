@@ -218,7 +218,7 @@ const Dashboard = () => {
                 <>
                   <StatCard
                     title="Temperature"
-                    value={Math.round(weatherData.temperature)}
+                    value={Math.round(weatherData.main?.temp || 0)}
                     unit="°C"
                     icon={Thermometer}
                     color="text-red-600"
@@ -226,7 +226,7 @@ const Dashboard = () => {
                   />
                   <StatCard
                     title="Humidity"
-                    value={weatherData.humidity}
+                    value={Math.round(weatherData.main?.humidity || 0)}
                     unit="%"
                     icon={Cloud}
                     color="text-blue-600"
@@ -234,7 +234,7 @@ const Dashboard = () => {
                   />
                   <StatCard
                     title="Wind Speed"
-                    value={weatherData.windSpeed}
+                    value={Math.round(weatherData.wind?.speed || 0)}
                     unit="m/s"
                     icon={Wind}
                     color="text-green-600"
@@ -271,7 +271,7 @@ const Dashboard = () => {
             )}
 
             {/* TEMPO Data */}
-            {tempoData && (
+            {tempoData && tempoData.pollutants && (
               <div className="bg-white rounded-lg shadow p-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">TEMPO Satellite Data</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -313,7 +313,7 @@ const Dashboard = () => {
             </div>
 
             {/* Quick Forecast */}
-            {comprehensiveForecast && (
+            {comprehensiveForecast && comprehensiveForecast.aqi && (
               <div className="bg-white rounded-lg shadow p-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">24-Hour Forecast</h2>
                 <div className="space-y-3">
