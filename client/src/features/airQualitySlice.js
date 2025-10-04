@@ -4,31 +4,37 @@ import axios from 'axios';
 // Async thunks for API calls
 export const fetchAirQualityData = createAsyncThunk(
   'airQuality/fetchData',
-  async ({ lat, lng, radius = 25 }) => {
-    const response = await axios.get('/api/air-quality/current', {
-      params: { lat, lng, radius }
-    });
-    return response.data;
+  async (location, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(`/api/air-quality?lat=${location.lat}&lon=${location.lon}`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
   }
 );
 
 export const fetchTempoData = createAsyncThunk(
   'airQuality/fetchTempoData',
-  async ({ lat, lng }) => {
-    const response = await axios.get('/api/tempo/current', {
-      params: { lat, lng }
-    });
-    return response.data;
+  async (location, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(`/api/tempo?lat=${location.lat}&lon=${location.lon}`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
   }
 );
 
 export const fetchWeatherData = createAsyncThunk(
   'airQuality/fetchWeatherData',
-  async ({ lat, lng }) => {
-    const response = await axios.get('/api/weather/current', {
-      params: { lat, lng }
-    });
-    return response.data;
+  async (location, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(`/api/weather?lat=${location.lat}&lon=${location.lon}`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
   }
 );
 
@@ -38,10 +44,10 @@ const initialState = {
   weatherData: null,
   loading: false,
   error: null,
-  lastUpdate: null,
+  lastUpdated: null,
   location: {
     lat: 40.7128,
-    lng: -74.0060,
+    lon: -74.0060,
     name: 'New York, NY'
   }
 };
@@ -56,8 +62,9 @@ const airQualitySlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
-    updateLastUpdate: (state) => {
-      state.lastUpdate = new Date().toISOString();
+    updateCurrentData: (state, action) => {
+      state.currentData = action.payload;
+      state.lastUpdated = new Date().toISOString();
     }
   },
   extraReducers: (builder) => {
@@ -69,12 +76,12 @@ const airQualitySlice = createSlice({
       })
       .addCase(fetchAirQualityData.fulfilled, (state, action) => {
         state.loading = false;
-        state.currentData = action.payload.data;
-        state.lastUpdate = new Date().toISOString();
+        state.currentData = action.payload;
+        state.lastUpdated = new Date().toISOString();
       })
       .addCase(fetchAirQualityData.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message;
+        state.error = action.payload;
       })
       // Fetch TEMPO data
       .addCase(fetchTempoData.pending, (state) => {
@@ -83,12 +90,11 @@ const airQualitySlice = createSlice({
       })
       .addCase(fetchTempoData.fulfilled, (state, action) => {
         state.loading = false;
-        state.tempoData = action.payload.data;
-        state.lastUpdate = new Date().toISOString();
+        state.tempoData = action.payload;
       })
       .addCase(fetchTempoData.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message;
+        state.error = action.payload;
       })
       // Fetch weather data
       .addCase(fetchWeatherData.pending, (state) => {
@@ -97,15 +103,14 @@ const airQualitySlice = createSlice({
       })
       .addCase(fetchWeatherData.fulfilled, (state, action) => {
         state.loading = false;
-        state.weatherData = action.payload.data;
-        state.lastUpdate = new Date().toISOString();
+        state.weatherData = action.payload;
       })
       .addCase(fetchWeatherData.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message;
+        state.error = action.payload;
       });
   }
 });
 
-export const { setLocation, clearError, updateLastUpdate } = airQualitySlice.actions;
+export const { setLocation, clearError, updateCurrentData } = airQualitySlice.actions;
 export default airQualitySlice.reducer;

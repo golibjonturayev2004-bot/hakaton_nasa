@@ -1,78 +1,103 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-// Async thunks for forecast API calls
+// Async thunks for API calls
+export const fetchForecast = createAsyncThunk(
+  'forecast/fetchForecast',
+  async (params, { rejectWithValue }) => {
+    try {
+      const { lat, lon, hours = 24 } = params;
+      const response = await axios.get(`/api/forecast?lat=${lat}&lon=${lon}&hours=${hours}`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const fetchWeatherData = createAsyncThunk(
+  'forecast/fetchWeatherData',
+  async (location, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(`/api/weather?lat=${location.lat}&lon=${location.lon}`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 export const fetchComprehensiveForecast = createAsyncThunk(
-  'forecast/fetchComprehensive',
-  async ({ lat, lng, hours = 24 }) => {
-    const response = await axios.get('/api/forecast/comprehensive', {
-      params: { lat, lng, hours }
-    });
-    return response.data;
-  }
-);
-
-export const fetchAQIForecast = createAsyncThunk(
-  'forecast/fetchAQI',
-  async ({ lat, lng, hours = 24 }) => {
-    const response = await axios.get('/api/forecast/aqi', {
-      params: { lat, lng, hours }
-    });
-    return response.data;
-  }
-);
-
-export const fetchPollutantForecast = createAsyncThunk(
-  'forecast/fetchPollutant',
-  async ({ lat, lng, pollutant, hours = 24 }) => {
-    const response = await axios.get('/api/forecast/pollutant', {
-      params: { lat, lng, pollutant, hours }
-    });
-    return response.data;
-  }
-);
-
-export const fetchForecastAlerts = createAsyncThunk(
-  'forecast/fetchAlerts',
-  async ({ lat, lng, hours = 24 }) => {
-    const response = await axios.get('/api/forecast/alerts', {
-      params: { lat, lng, hours }
-    });
-    return response.data;
+  'forecast/fetchComprehensiveForecast',
+  async (params, { rejectWithValue }) => {
+    try {
+      const { lat, lon, hours = 24 } = params;
+      const response = await axios.get(`/api/forecast/comprehensive?lat=${lat}&lon=${lon}&hours=${hours}`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
   }
 );
 
 const initialState = {
+  forecastData: null,
   comprehensiveForecast: null,
-  aqiForecast: null,
-  pollutantForecasts: {},
-  alerts: [],
+  weatherData: null,
   loading: false,
   error: null,
-  lastUpdate: null,
-  selectedPollutant: 'PM2.5',
-  forecastHours: 24
+  lastUpdated: null,
+  selectedHours: 24,
+  selectedPollutant: 'PM2.5'
 };
 
 const forecastSlice = createSlice({
   name: 'forecast',
   initialState,
   reducers: {
+    setSelectedHours: (state, action) => {
+      state.selectedHours = action.payload;
+    },
     setSelectedPollutant: (state, action) => {
       state.selectedPollutant = action.payload;
-    },
-    setForecastHours: (state, action) => {
-      state.forecastHours = action.payload;
     },
     clearError: (state) => {
       state.error = null;
     },
-    updateLastUpdate: (state) => {
-      state.lastUpdate = new Date().toISOString();
+    updateForecastData: (state, action) => {
+      state.forecastData = action.payload;
+      state.lastUpdated = new Date().toISOString();
     }
   },
   extraReducers: (builder) => {
     builder
+      // Fetch forecast data
+      .addCase(fetchForecast.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchForecast.fulfilled, (state, action) => {
+        state.loading = false;
+        state.forecastData = action.payload;
+        state.lastUpdated = new Date().toISOString();
+      })
+      .addCase(fetchForecast.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Fetch weather data
+      .addCase(fetchWeatherData.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchWeatherData.fulfilled, (state, action) => {
+        state.loading = false;
+        state.weatherData = action.payload;
+      })
+      .addCase(fetchWeatherData.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
       // Fetch comprehensive forecast
       .addCase(fetchComprehensiveForecast.pending, (state) => {
         state.loading = true;
@@ -80,63 +105,20 @@ const forecastSlice = createSlice({
       })
       .addCase(fetchComprehensiveForecast.fulfilled, (state, action) => {
         state.loading = false;
-        state.comprehensiveForecast = action.payload.data;
-        state.lastUpdate = new Date().toISOString();
+        state.comprehensiveForecast = action.payload;
+        state.lastUpdated = new Date().toISOString();
       })
       .addCase(fetchComprehensiveForecast.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message;
-      })
-      // Fetch AQI forecast
-      .addCase(fetchAQIForecast.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchAQIForecast.fulfilled, (state, action) => {
-        state.loading = false;
-        state.aqiForecast = action.payload.data;
-        state.lastUpdate = new Date().toISOString();
-      })
-      .addCase(fetchAQIForecast.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message;
-      })
-      // Fetch pollutant forecast
-      .addCase(fetchPollutantForecast.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchPollutantForecast.fulfilled, (state, action) => {
-        state.loading = false;
-        state.pollutantForecasts[action.payload.data.pollutant] = action.payload.data;
-        state.lastUpdate = new Date().toISOString();
-      })
-      .addCase(fetchPollutantForecast.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message;
-      })
-      // Fetch forecast alerts
-      .addCase(fetchForecastAlerts.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchForecastAlerts.fulfilled, (state, action) => {
-        state.loading = false;
-        state.alerts = action.payload.data;
-        state.lastUpdate = new Date().toISOString();
-      })
-      .addCase(fetchForecastAlerts.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message;
+        state.error = action.payload;
       });
   }
 });
 
 export const { 
+  setSelectedHours, 
   setSelectedPollutant, 
-  setForecastHours, 
   clearError, 
-  updateLastUpdate 
+  updateForecastData 
 } = forecastSlice.actions;
-
 export default forecastSlice.reducer;

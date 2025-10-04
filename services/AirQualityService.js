@@ -79,30 +79,32 @@ class AirQualityService {
   }
 
   /**
-   * Fetch data from OpenAQ API
+   * Fetch data from OpenAQ API v3
    * @param {Object} params - Query parameters
    * @returns {Promise<Object>} OpenAQ data
    */
   async fetchOpenAQData(params) {
     try {
-      const response = await axios.get('https://api.openaq.org/v2/measurements', {
+      const apiKey = process.env.OPENAQ_API_KEY || 'd282fb1ee29051fcbbd629dc2ed71a7b477ababcda6e52d84434c9eeefa47f42';
+      
+      const response = await axios.get('https://api.openaq.org/v3/measurements', {
         params: {
           coordinates: `${params.lat},${params.lng}`,
           radius: (params.radius || 25) * 1000, // Convert to meters
           limit: 100,
           page: 1,
           sort: 'desc',
-          order_by: 'datetime'
+          orderBy: 'datetime'
         },
         headers: {
-          'X-API-Key': this.openAQApiKey
+          'X-API-Key': apiKey
         },
         timeout: 15000
       });
 
       return response.data;
     } catch (error) {
-      console.error('OpenAQ API error:', error.message);
+      console.error('OpenAQ API v3 error:', error.message);
       return null;
     }
   }
@@ -154,7 +156,7 @@ class AirQualityService {
       });
     }
 
-    // Process OpenAQ data
+    // Process OpenAQ v3 data
     if (rawData.openAQ && rawData.openAQ.results) {
       rawData.openAQ.results.forEach(measurement => {
         processed.sources.push('OpenAQ');

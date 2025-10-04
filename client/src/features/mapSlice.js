@@ -7,16 +7,14 @@ const initialState = {
   },
   zoom: 10,
   selectedLocation: null,
-  markers: [],
-  layers: {
-    airQuality: true,
-    tempo: true,
-    weather: true,
-    forecasts: true
-  },
-  viewMode: 'satellite', // satellite, street, terrain
-  showLegend: true,
-  showControls: true
+  mapType: 'satellite', // 'satellite', 'street', 'terrain'
+  showAirQualityLayer: true,
+  showForecastLayer: false,
+  showWeatherLayer: true,
+  selectedPollutant: 'PM2.5',
+  timeRange: 'current', // 'current', '24h', '7d'
+  loading: false,
+  error: null
 };
 
 const mapSlice = createSlice({
@@ -32,33 +30,35 @@ const mapSlice = createSlice({
     setSelectedLocation: (state, action) => {
       state.selectedLocation = action.payload;
     },
-    addMarker: (state, action) => {
-      state.markers.push(action.payload);
+    setMapType: (state, action) => {
+      state.mapType = action.payload;
     },
-    removeMarker: (state, action) => {
-      state.markers = state.markers.filter(marker => marker.id !== action.payload);
+    toggleAirQualityLayer: (state) => {
+      state.showAirQualityLayer = !state.showAirQualityLayer;
     },
-    clearMarkers: (state) => {
-      state.markers = [];
+    toggleForecastLayer: (state) => {
+      state.showForecastLayer = !state.showForecastLayer;
     },
-    updateLayer: (state, action) => {
-      const { layer, visible } = action.payload;
-      state.layers[layer] = visible;
+    toggleWeatherLayer: (state) => {
+      state.showWeatherLayer = !state.showWeatherLayer;
     },
-    setViewMode: (state, action) => {
-      state.viewMode = action.payload;
+    setSelectedPollutant: (state, action) => {
+      state.selectedPollutant = action.payload;
     },
-    toggleLegend: (state) => {
-      state.showLegend = !state.showLegend;
+    setTimeRange: (state, action) => {
+      state.timeRange = action.payload;
     },
-    toggleControls: (state) => {
-      state.showControls = !state.showControls;
+    setLoading: (state, action) => {
+      state.loading = action.payload;
+    },
+    setError: (state, action) => {
+      state.error = action.payload;
+    },
+    clearError: (state) => {
+      state.error = null;
     },
     resetMap: (state) => {
-      state.center = initialState.center;
-      state.zoom = initialState.zoom;
-      state.selectedLocation = null;
-      state.markers = [];
+      return { ...initialState };
     }
   }
 });
@@ -67,13 +67,15 @@ export const {
   setCenter,
   setZoom,
   setSelectedLocation,
-  addMarker,
-  removeMarker,
-  clearMarkers,
-  updateLayer,
-  setViewMode,
-  toggleLegend,
-  toggleControls,
+  setMapType,
+  toggleAirQualityLayer,
+  toggleForecastLayer,
+  toggleWeatherLayer,
+  setSelectedPollutant,
+  setTimeRange,
+  setLoading,
+  setError,
+  clearError,
   resetMap
 } = mapSlice.actions;
 
