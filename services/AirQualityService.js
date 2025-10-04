@@ -198,42 +198,105 @@ class AirQualityService {
 
   /**
    * Calculate overall AQI from pollutant concentrations
+   * AQI = max(IO3, INO2, IPM2.5, IPM10, ISO2, ICO)
    * @param {Object} pollutants - Pollutant data
    * @returns {number} Overall AQI
    */
   calculateOverallAQI(pollutants) {
     const aqiValues = [];
     
-    Object.values(pollutants).forEach(pollutant => {
+    Object.entries(pollutants).forEach(([pollutantName, pollutant]) => {
       if (pollutant.aqi) {
         aqiValues.push(pollutant.aqi);
       } else {
-        // Convert concentration to AQI if needed
-        const aqi = this.concentrationToAQI(pollutant.concentration, pollutant.unit);
-        if (aqi) aqiValues.push(aqi);
+        // Convert concentration to AQI using EPA formula
+        const aqi = this.concentrationToAQI(pollutant.concentration, pollutantName);
+        if (aqi > 0) aqiValues.push(aqi);
       }
     });
 
+    // AQI is the maximum of all individual pollutant AQIs
     return aqiValues.length > 0 ? Math.max(...aqiValues) : 0;
   }
 
   /**
-   * Convert concentration to AQI
+   * Convert concentration to AQI using EPA standard formula
    * @param {number} concentration - Pollutant concentration
-   * @param {string} unit - Concentration unit
+   * @param {string} pollutant - Pollutant name
    * @returns {number} AQI value
    */
-  concentrationToAQI(concentration, unit) {
-    // Simplified AQI calculation - in production, use proper EPA formulas
-    const thresholds = {
-      'PM2.5': { good: 12, moderate: 35, unhealthy: 55 },
-      'PM10': { good: 54, moderate: 154, unhealthy: 254 },
-      'O3': { good: 54, moderate: 70, unhealthy: 85 },
-      'NO2': { good: 53, moderate: 100, unhealthy: 360 }
+  concentrationToAQI(concentration, pollutant) {
+    // EPA AQI breakpoints and formulas
+    const breakpoints = {
+      'PM2.5': [
+        { aqiLow: 0, aqiHigh: 50, concLow: 0, concHigh: 12.0 },
+        { aqiLow: 51, aqiHigh: 100, concLow: 12.1, concHigh: 35.4 },
+        { aqiLow: 101, aqiHigh: 150, concLow: 35.5, concHigh: 55.4 },
+        { aqiLow: 151, aqiHigh: 200, concLow: 55.5, concHigh: 150.4 },
+        { aqiLow: 201, aqiHigh: 300, concLow: 150.5, concHigh: 250.4 },
+        { aqiLow: 301, aqiHigh: 400, concLow: 250.5, concHigh: 350.4 },
+        { aqiLow: 401, aqiHigh: 500, concLow: 350.5, concHigh: 500.4 }
+      ],
+      'PM10': [
+        { aqiLow: 0, aqiHigh: 50, concLow: 0, concHigh: 54 },
+        { aqiLow: 51, aqiHigh: 100, concLow: 55, concHigh: 154 },
+        { aqiLow: 101, aqiHigh: 150, concLow: 155, concHigh: 254 },
+        { aqiLow: 151, aqiHigh: 200, concLow: 255, concHigh: 354 },
+        { aqiLow: 201, aqiHigh: 300, concLow: 355, concHigh: 424 },
+        { aqiLow: 301, aqiHigh: 400, concLow: 425, concHigh: 504 },
+        { aqiLow: 401, aqiHigh: 500, concLow: 505, concHigh: 604 }
+      ],
+      'O3': [
+        { aqiLow: 0, aqiHigh: 50, concLow: 0, concHigh: 54 },
+        { aqiLow: 51, aqiHigh: 100, concLow: 55, concHigh: 70 },
+        { aqiLow: 101, aqiHigh: 150, concLow: 71, concHigh: 85 },
+        { aqiLow: 151, aqiHigh: 200, concLow: 86, concHigh: 105 },
+        { aqiLow: 201, aqiHigh: 300, concLow: 106, concHigh: 200 }
+      ],
+      'NO2': [
+        { aqiLow: 0, aqiHigh: 50, concLow: 0, concHigh: 53 },
+        { aqiLow: 51, aqiHigh: 100, concLow: 54, concHigh: 100 },
+        { aqiLow: 101, aqiHigh: 150, concLow: 101, concHigh: 360 },
+        { aqiLow: 151, aqiHigh: 200, concLow: 361, concHigh: 649 },
+        { aqiLow: 201, aqiHigh: 300, concLow: 650, concHigh: 1249 },
+        { aqiLow: 301, aqiHigh: 400, concLow: 1250, concHigh: 1649 },
+        { aqiLow: 401, aqiHigh: 500, concLow: 1650, concHigh: 2049 }
+      ],
+      'SO2': [
+        { aqiLow: 0, aqiHigh: 50, concLow: 0, concHigh: 35 },
+        { aqiLow: 51, aqiHigh: 100, concLow: 36, concHigh: 75 },
+        { aqiLow: 101, aqiHigh: 150, concLow: 76, concHigh: 185 },
+        { aqiLow: 151, aqiHigh: 200, concLow: 186, concHigh: 304 },
+        { aqiLow: 201, aqiHigh: 300, concLow: 305, concHigh: 604 }
+      ],
+      'CO': [
+        { aqiLow: 0, aqiHigh: 50, concLow: 0, concHigh: 4.4 },
+        { aqiLow: 51, aqiHigh: 100, concLow: 4.5, concHigh: 9.4 },
+        { aqiLow: 101, aqiHigh: 150, concLow: 9.5, concHigh: 12.4 },
+        { aqiLow: 151, aqiHigh: 200, concLow: 12.5, concHigh: 15.4 },
+        { aqiLow: 201, aqiHigh: 300, concLow: 15.5, concHigh: 30.4 },
+        { aqiLow: 301, aqiHigh: 400, concLow: 30.5, concHigh: 40.4 },
+        { aqiLow: 401, aqiHigh: 500, concLow: 40.5, concHigh: 50.4 }
+      ]
     };
 
-    // This is a simplified version - actual AQI calculation is more complex
-    return Math.round(concentration * 2); // Placeholder calculation
+    const pollutantBreakpoints = breakpoints[pollutant];
+    if (!pollutantBreakpoints) return 0;
+
+    // Find the appropriate breakpoint range
+    for (const bp of pollutantBreakpoints) {
+      if (concentration >= bp.concLow && concentration <= bp.concHigh) {
+        // Calculate AQI using EPA formula: AQI = ((I_high - I_low) / (C_high - C_low)) * (C - C_low) + I_low
+        const aqi = Math.round(
+          ((bp.aqiHigh - bp.aqiLow) / (bp.concHigh - bp.concLow)) * 
+          (concentration - bp.concLow) + bp.aqiLow
+        );
+        return Math.min(aqi, 500); // Cap at 500
+      }
+    }
+
+    // If concentration is above the highest breakpoint, return 500
+    return 500;
   }
 
   /**

@@ -89,6 +89,80 @@ const Dashboard = () => {
     return 'Hazardous';
   };
 
+  // Calculate AQI for individual pollutants using EPA formula
+  const calculatePollutantAQI = (concentration, pollutant) => {
+    const breakpoints = {
+      'PM2.5': [
+        { aqiLow: 0, aqiHigh: 50, concLow: 0, concHigh: 12.0 },
+        { aqiLow: 51, aqiHigh: 100, concLow: 12.1, concHigh: 35.4 },
+        { aqiLow: 101, aqiHigh: 150, concLow: 35.5, concHigh: 55.4 },
+        { aqiLow: 151, aqiHigh: 200, concLow: 55.5, concHigh: 150.4 },
+        { aqiLow: 201, aqiHigh: 300, concLow: 150.5, concHigh: 250.4 },
+        { aqiLow: 301, aqiHigh: 400, concLow: 250.5, concHigh: 350.4 },
+        { aqiLow: 401, aqiHigh: 500, concLow: 350.5, concHigh: 500.4 }
+      ],
+      'PM10': [
+        { aqiLow: 0, aqiHigh: 50, concLow: 0, concHigh: 54 },
+        { aqiLow: 51, aqiHigh: 100, concLow: 55, concHigh: 154 },
+        { aqiLow: 101, aqiHigh: 150, concLow: 155, concHigh: 254 },
+        { aqiLow: 151, aqiHigh: 200, concLow: 255, concHigh: 354 },
+        { aqiLow: 201, aqiHigh: 300, concLow: 355, concHigh: 424 },
+        { aqiLow: 301, aqiHigh: 400, concLow: 425, concHigh: 504 },
+        { aqiLow: 401, aqiHigh: 500, concLow: 505, concHigh: 604 }
+      ],
+      'O3': [
+        { aqiLow: 0, aqiHigh: 50, concLow: 0, concHigh: 54 },
+        { aqiLow: 51, aqiHigh: 100, concLow: 55, concHigh: 70 },
+        { aqiLow: 101, aqiHigh: 150, concLow: 71, concHigh: 85 },
+        { aqiLow: 151, aqiHigh: 200, concLow: 86, concHigh: 105 },
+        { aqiLow: 201, aqiHigh: 300, concLow: 106, concHigh: 200 }
+      ],
+      'NO2': [
+        { aqiLow: 0, aqiHigh: 50, concLow: 0, concHigh: 53 },
+        { aqiLow: 51, aqiHigh: 100, concLow: 54, concHigh: 100 },
+        { aqiLow: 101, aqiHigh: 150, concLow: 101, concHigh: 360 },
+        { aqiLow: 151, aqiHigh: 200, concLow: 361, concHigh: 649 },
+        { aqiLow: 201, aqiHigh: 300, concLow: 650, concHigh: 1249 },
+        { aqiLow: 301, aqiHigh: 400, concLow: 1250, concHigh: 1649 },
+        { aqiLow: 401, aqiHigh: 500, concLow: 1650, concHigh: 2049 }
+      ],
+      'SO2': [
+        { aqiLow: 0, aqiHigh: 50, concLow: 0, concHigh: 35 },
+        { aqiLow: 51, aqiHigh: 100, concLow: 36, concHigh: 75 },
+        { aqiLow: 101, aqiHigh: 150, concLow: 76, concHigh: 185 },
+        { aqiLow: 151, aqiHigh: 200, concLow: 186, concHigh: 304 },
+        { aqiLow: 201, aqiHigh: 300, concLow: 305, concHigh: 604 }
+      ],
+      'CO': [
+        { aqiLow: 0, aqiHigh: 50, concLow: 0, concHigh: 4.4 },
+        { aqiLow: 51, aqiHigh: 100, concLow: 4.5, concHigh: 9.4 },
+        { aqiLow: 101, aqiHigh: 150, concLow: 9.5, concHigh: 12.4 },
+        { aqiLow: 151, aqiHigh: 200, concLow: 12.5, concHigh: 15.4 },
+        { aqiLow: 201, aqiHigh: 300, concLow: 15.5, concHigh: 30.4 },
+        { aqiLow: 301, aqiHigh: 400, concLow: 30.5, concHigh: 40.4 },
+        { aqiLow: 401, aqiHigh: 500, concLow: 40.5, concHigh: 50.4 }
+      ]
+    };
+
+    const pollutantBreakpoints = breakpoints[pollutant];
+    if (!pollutantBreakpoints) return 0;
+
+    // Find the appropriate breakpoint range
+    for (const bp of pollutantBreakpoints) {
+      if (concentration >= bp.concLow && concentration <= bp.concHigh) {
+        // Calculate AQI using EPA formula: AQI = ((I_high - I_low) / (C_high - C_low)) * (C - C_low) + I_low
+        const aqi = Math.round(
+          ((bp.aqiHigh - bp.aqiLow) / (bp.concHigh - bp.concLow)) * 
+          (concentration - bp.concLow) + bp.aqiLow
+        );
+        return Math.min(aqi, 500); // Cap at 500
+      }
+    }
+
+    // If concentration is above the highest breakpoint, return 500
+    return 500;
+  };
+
   const StatCard = ({ title, value, unit, icon: Icon, color = 'text-blue-600', bgColor = 'bg-blue-100' }) => (
     <div className="bg-white rounded-lg shadow p-6">
       <div className="flex items-center">
@@ -252,38 +326,113 @@ const Dashboard = () => {
               )}
             </div>
 
-            {/* Pollutant Levels */}
+            {/* Individual Pollutant AQI */}
             {currentData && currentData.pollutants && (
               <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Pollutant Concentrations</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {Object.entries(currentData.pollutants).map(([pollutant, data]) => (
-                    <div key={pollutant} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                      <span className="font-medium text-gray-700">{pollutant}</span>
-                      <div className="text-right">
-                        <span className="text-lg font-semibold">{data.concentration}</span>
-                        <span className="text-sm text-gray-500 ml-1">{data.unit}</span>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Individual Pollutant AQI</h2>
+                
+                {/* Calculate overall AQI */}
+                {(() => {
+                  const pollutantAQIs = [];
+                  Object.entries(currentData.pollutants).forEach(([pollutant, data]) => {
+                    const pollutantAQI = data.aqi || calculatePollutantAQI(data.concentration, pollutant);
+                    pollutantAQIs.push(pollutantAQI);
+                  });
+                  const overallAQI = Math.max(...pollutantAQIs);
+                  
+                  return (
+                    <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border-l-4 border-blue-400">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">Overall AQI</h3>
+                          <p className="text-sm text-gray-600">Maximum of all pollutant AQIs</p>
+                        </div>
+                        <div className={`px-6 py-3 rounded-lg ${getAQIColor(overallAQI)}`}>
+                          <div className="text-3xl font-bold">{overallAQI}</div>
+                          <div className="text-sm font-medium">{getAQILevel(overallAQI)}</div>
+                        </div>
                       </div>
                     </div>
-                  ))}
+                  );
+                })()}
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {Object.entries(currentData.pollutants).map(([pollutant, data]) => {
+                    // Calculate AQI for each pollutant
+                    const pollutantAQI = data.aqi || calculatePollutantAQI(data.concentration, pollutant);
+                    return (
+                      <div key={pollutant} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <span className="font-medium text-gray-700">{pollutant}</span>
+                        <div className="text-right">
+                          <div className={`px-3 py-1 rounded-full text-sm font-semibold ${getAQIColor(pollutantAQI)}`}>
+                            AQI {pollutantAQI}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {data.concentration} {data.unit}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    <strong>Formula:</strong> AQI = max(IO3, INO2, IPM2.5, IPM10, ISO2, ICO)
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">
+                    Each pollutant AQI is calculated using EPA breakpoint formula
+                  </p>
                 </div>
               </div>
             )}
 
-            {/* TEMPO Data */}
+            {/* TEMPO Data with AQI */}
             {tempoData && tempoData.pollutants && (
               <div className="bg-white rounded-lg shadow p-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">TEMPO Satellite Data</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {Object.entries(tempoData.pollutants).map(([pollutant, data]) => (
-                    <div key={pollutant} className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-                      <span className="font-medium text-gray-700">{pollutant}</span>
-                      <div className="text-right">
-                        <span className="text-lg font-semibold">{data.concentration}</span>
-                        <span className="text-sm text-gray-500 ml-1">{data.unit}</span>
+                
+                {/* Calculate overall AQI for TEMPO data */}
+                {(() => {
+                  const tempoAQIs = [];
+                  Object.entries(tempoData.pollutants).forEach(([pollutant, data]) => {
+                    const pollutantAQI = data.aqi || calculatePollutantAQI(data.concentration, pollutant);
+                    tempoAQIs.push(pollutantAQI);
+                  });
+                  const overallTempoAQI = Math.max(...tempoAQIs);
+                  
+                  return (
+                    <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border-l-4 border-purple-400">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">TEMPO Overall AQI</h3>
+                          <p className="text-sm text-gray-600">Maximum of all TEMPO pollutant AQIs</p>
+                        </div>
+                        <div className={`px-6 py-3 rounded-lg ${getAQIColor(overallTempoAQI)}`}>
+                          <div className="text-3xl font-bold">{overallTempoAQI}</div>
+                          <div className="text-sm font-medium">{getAQILevel(overallTempoAQI)}</div>
+                        </div>
                       </div>
                     </div>
-                  ))}
+                  );
+                })()}
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {Object.entries(tempoData.pollutants).map(([pollutant, data]) => {
+                    const pollutantAQI = data.aqi || calculatePollutantAQI(data.concentration, pollutant);
+                    return (
+                      <div key={pollutant} className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                        <span className="font-medium text-gray-700">{pollutant}</span>
+                        <div className="text-right">
+                          <div className={`px-3 py-1 rounded-full text-sm font-semibold ${getAQIColor(pollutantAQI)}`}>
+                            AQI {pollutantAQI}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {data.concentration} {data.unit}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
                 <div className="mt-4 text-sm text-gray-600">
                   <p>Data Quality: {tempoData.dataQuality.confidence}</p>
