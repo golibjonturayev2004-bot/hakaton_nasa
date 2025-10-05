@@ -164,6 +164,8 @@ const Dashboard = () => {
         return Math.min(aqi, 500); // Cap at 500
       }
     }
+  
+    
 
     // If concentration is above the highest breakpoint, return 500
     return 500;
