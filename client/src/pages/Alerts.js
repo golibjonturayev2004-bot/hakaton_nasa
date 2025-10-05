@@ -5,7 +5,7 @@ import { initializeSocketConnection } from '../features/notificationSlice';
 
 const Alerts = () => {
   const dispatch = useDispatch();
-  const { notifications, socketConnected } = useSelector(state => state.notifications);
+  const { socketConnected } = useSelector(state => state.notifications);
   const { currentData } = useSelector(state => state.airQuality);
   
   const [notificationSettings, setNotificationSettings] = useState({

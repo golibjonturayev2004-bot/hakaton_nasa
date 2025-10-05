@@ -3,7 +3,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { 
   fetchAirQualityData, 
   fetchTempoData, 
-  fetchWeatherData
+  fetchWeatherData,
+  fetchOpenAQData
 } from '../features/airQualitySlice';
 import { fetchComprehensiveForecast } from '../features/forecastSlice';
 import { initializeSocketConnection } from '../features/notificationSlice';
@@ -24,6 +25,7 @@ const Dashboard = () => {
     currentData, 
     tempoData, 
     weatherData, 
+    openaqData,
     loading, 
     error, 
     location 
@@ -44,6 +46,10 @@ const Dashboard = () => {
       lon: location.lon 
     }));
     dispatch(fetchWeatherData({ 
+      lat: location.lat, 
+      lon: location.lon 
+    }));
+    dispatch(fetchOpenAQData({ 
       lat: location.lat, 
       lon: location.lon 
     }));
@@ -90,59 +96,59 @@ const Dashboard = () => {
   };
 
   // Calculate AQI for individual pollutants using EPA formula
-  const calculatePollutantAQI = (concentration, pollutant) => {
-    const breakpoints = {
-      'PM2.5': [
-        { aqiLow: 0, aqiHigh: 50, concLow: 0, concHigh: 12.0 },
-        { aqiLow: 51, aqiHigh: 100, concLow: 12.1, concHigh: 35.4 },
-        { aqiLow: 101, aqiHigh: 150, concLow: 35.5, concHigh: 55.4 },
-        { aqiLow: 151, aqiHigh: 200, concLow: 55.5, concHigh: 150.4 },
-        { aqiLow: 201, aqiHigh: 300, concLow: 150.5, concHigh: 250.4 },
-        { aqiLow: 301, aqiHigh: 400, concLow: 250.5, concHigh: 350.4 },
-        { aqiLow: 401, aqiHigh: 500, concLow: 350.5, concHigh: 500.4 }
-      ],
-      'PM10': [
-        { aqiLow: 0, aqiHigh: 50, concLow: 0, concHigh: 54 },
-        { aqiLow: 51, aqiHigh: 100, concLow: 55, concHigh: 154 },
-        { aqiLow: 101, aqiHigh: 150, concLow: 155, concHigh: 254 },
-        { aqiLow: 151, aqiHigh: 200, concLow: 255, concHigh: 354 },
-        { aqiLow: 201, aqiHigh: 300, concLow: 355, concHigh: 424 },
-        { aqiLow: 301, aqiHigh: 400, concLow: 425, concHigh: 504 },
-        { aqiLow: 401, aqiHigh: 500, concLow: 505, concHigh: 604 }
-      ],
-      'O3': [
-        { aqiLow: 0, aqiHigh: 50, concLow: 0, concHigh: 54 },
-        { aqiLow: 51, aqiHigh: 100, concLow: 55, concHigh: 70 },
-        { aqiLow: 101, aqiHigh: 150, concLow: 71, concHigh: 85 },
-        { aqiLow: 151, aqiHigh: 200, concLow: 86, concHigh: 105 },
-        { aqiLow: 201, aqiHigh: 300, concLow: 106, concHigh: 200 }
-      ],
-      'NO2': [
-        { aqiLow: 0, aqiHigh: 50, concLow: 0, concHigh: 53 },
-        { aqiLow: 51, aqiHigh: 100, concLow: 54, concHigh: 100 },
-        { aqiLow: 101, aqiHigh: 150, concLow: 101, concHigh: 360 },
-        { aqiLow: 151, aqiHigh: 200, concLow: 361, concHigh: 649 },
-        { aqiLow: 201, aqiHigh: 300, concLow: 650, concHigh: 1249 },
-        { aqiLow: 301, aqiHigh: 400, concLow: 1250, concHigh: 1649 },
-        { aqiLow: 401, aqiHigh: 500, concLow: 1650, concHigh: 2049 }
-      ],
-      'SO2': [
-        { aqiLow: 0, aqiHigh: 50, concLow: 0, concHigh: 35 },
-        { aqiLow: 51, aqiHigh: 100, concLow: 36, concHigh: 75 },
-        { aqiLow: 101, aqiHigh: 150, concLow: 76, concHigh: 185 },
-        { aqiLow: 151, aqiHigh: 200, concLow: 186, concHigh: 304 },
-        { aqiLow: 201, aqiHigh: 300, concLow: 305, concHigh: 604 }
-      ],
-      'CO': [
-        { aqiLow: 0, aqiHigh: 50, concLow: 0, concHigh: 4.4 },
-        { aqiLow: 51, aqiHigh: 100, concLow: 4.5, concHigh: 9.4 },
-        { aqiLow: 101, aqiHigh: 150, concLow: 9.5, concHigh: 12.4 },
-        { aqiLow: 151, aqiHigh: 200, concLow: 12.5, concHigh: 15.4 },
-        { aqiLow: 201, aqiHigh: 300, concLow: 15.5, concHigh: 30.4 },
-        { aqiLow: 301, aqiHigh: 400, concLow: 30.5, concHigh: 40.4 },
-        { aqiLow: 401, aqiHigh: 500, concLow: 40.5, concHigh: 50.4 }
-      ]
-    };
+    const calculatePollutantAQI = (concentration, pollutant) => {
+      const breakpoints = {
+        'PM2.5': [
+          { aqiLow: 0, aqiHigh: 50, concLow: 0, concHigh: 12.0 },
+          { aqiLow: 51, aqiHigh: 100, concLow: 12.1, concHigh: 35.4 },
+          { aqiLow: 101, aqiHigh: 150, concLow: 35.5, concHigh: 55.4 },
+          { aqiLow: 151, aqiHigh: 200, concLow: 55.5, concHigh: 150.4 },
+          { aqiLow: 201, aqiHigh: 300, concLow: 150.5, concHigh: 250.4 },
+          { aqiLow: 301, aqiHigh: 400, concLow: 250.5, concHigh: 350.4 },
+          { aqiLow: 401, aqiHigh: 500, concLow: 350.5, concHigh: 500.4 }
+        ],
+        'PM10': [
+          { aqiLow: 0, aqiHigh: 50, concLow: 0, concHigh: 54 },
+          { aqiLow: 51, aqiHigh: 100, concLow: 55, concHigh: 154 },
+          { aqiLow: 101, aqiHigh: 150, concLow: 155, concHigh: 254 },
+          { aqiLow: 151, aqiHigh: 200, concLow: 255, concHigh: 354 },
+          { aqiLow: 201, aqiHigh: 300, concLow: 355, concHigh: 424 },
+          { aqiLow: 301, aqiHigh: 400, concLow: 425, concHigh: 504 },
+          { aqiLow: 401, aqiHigh: 500, concLow: 505, concHigh: 604 }
+        ],
+        'O3': [
+          { aqiLow: 0, aqiHigh: 50, concLow: 0, concHigh: 54 },
+          { aqiLow: 51, aqiHigh: 100, concLow: 55, concHigh: 70 },
+          { aqiLow: 101, aqiHigh: 150, concLow: 71, concHigh: 85 },
+          { aqiLow: 151, aqiHigh: 200, concLow: 86, concHigh: 105 },
+          { aqiLow: 201, aqiHigh: 300, concLow: 106, concHigh: 200 }
+        ],
+        'NO2': [
+          { aqiLow: 0, aqiHigh: 50, concLow: 0, concHigh: 53 },
+          { aqiLow: 51, aqiHigh: 100, concLow: 54, concHigh: 100 },
+          { aqiLow: 101, aqiHigh: 150, concLow: 101, concHigh: 360 },
+          { aqiLow: 151, aqiHigh: 200, concLow: 361, concHigh: 649 },
+          { aqiLow: 201, aqiHigh: 300, concLow: 650, concHigh: 1249 },
+          { aqiLow: 301, aqiHigh: 400, concLow: 1250, concHigh: 1649 },
+          { aqiLow: 401, aqiHigh: 500, concLow: 1650, concHigh: 2049 }
+        ],
+        'SO2': [
+          { aqiLow: 0, aqiHigh: 50, concLow: 0, concHigh: 35 },
+          { aqiLow: 51, aqiHigh: 100, concLow: 36, concHigh: 75 },
+          { aqiLow: 101, aqiHigh: 150, concLow: 76, concHigh: 185 },
+          { aqiLow: 151, aqiHigh: 200, concLow: 186, concHigh: 304 },
+          { aqiLow: 201, aqiHigh: 300, concLow: 305, concHigh: 604 }
+        ],
+        'CO': [
+          { aqiLow: 0, aqiHigh: 50, concLow: 0, concHigh: 4.4 },
+          { aqiLow: 51, aqiHigh: 100, concLow: 4.5, concHigh: 9.4 },
+          { aqiLow: 101, aqiHigh: 150, concLow: 9.5, concHigh: 12.4 },
+          { aqiLow: 151, aqiHigh: 200, concLow: 12.5, concHigh: 15.4 },
+          { aqiLow: 201, aqiHigh: 300, concLow: 15.5, concHigh: 30.4 },
+          { aqiLow: 301, aqiHigh: 400, concLow: 30.5, concHigh: 40.4 },
+          { aqiLow: 401, aqiHigh: 500, concLow: 40.5, concHigh: 50.4 }
+        ]
+      };
 
     const pollutantBreakpoints = breakpoints[pollutant];
     if (!pollutantBreakpoints) return 0;
@@ -440,6 +446,166 @@ const Dashboard = () => {
                 </div>
               </div>
             )}
+
+            {/* OpenAQ Ground Station Data */}
+            {openaqData && openaqData.pollutants && (
+              <div className="bg-white rounded-lg shadow p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">OpenAQ Ground Station Data</h2>
+                
+                {/* Calculate overall AQI for OpenAQ data */}
+                {(() => {
+                  const openaqAQIs = [];
+                  Object.entries(openaqData.pollutants).forEach(([pollutant, data]) => {
+                    const pollutantAQI = data.aqi || calculatePollutantAQI(data.concentration, pollutant);
+                    openaqAQIs.push(pollutantAQI);
+                  });
+                  const overallOpenAQAQI = Math.max(...openaqAQIs);
+                  
+                  return (
+                    <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border-l-4 border-green-400">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">OpenAQ Overall AQI</h3>
+                          <p className="text-sm text-gray-600">Maximum of all OpenAQ pollutant AQIs</p>
+                        </div>
+                        <div className={`px-6 py-3 rounded-lg ${getAQIColor(overallOpenAQAQI)}`}>
+                          <div className="text-3xl font-bold">{overallOpenAQAQI}</div>
+                          <div className="text-sm font-medium">{getAQILevel(overallOpenAQAQI)}</div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {Object.entries(openaqData.pollutants).map(([pollutant, data]) => {
+                    const pollutantAQI = data.aqi || calculatePollutantAQI(data.concentration, pollutant);
+                    return (
+                      <div key={pollutant} className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                        <span className="font-medium text-gray-700">{pollutant}</span>
+                        <div className="text-right">
+                          <div className={`px-3 py-1 rounded-full text-sm font-semibold ${getAQIColor(pollutantAQI)}`}>
+                            AQI {pollutantAQI}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {data.concentration} {data.unit}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-4 text-sm text-gray-600">
+                  <p>Data Quality: {openaqData.dataQuality.confidence}</p>
+                  <p>Resolution: {openaqData.dataQuality.resolution}</p>
+                  <p>Coverage: {openaqData.dataQuality.coverage}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Data Source Comparison */}
+            {tempoData && openaqData && (
+              <div className="bg-white rounded-lg shadow p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Data Source Comparison</h2>
+                
+                {/* Overall AQI Comparison */}
+                {(() => {
+                  const tempoAQIs = [];
+                  const openaqAQIs = [];
+                  
+                  Object.entries(tempoData.pollutants || {}).forEach(([pollutant, data]) => {
+                    const pollutantAQI = data.aqi || calculatePollutantAQI(data.concentration, pollutant);
+                    tempoAQIs.push(pollutantAQI);
+                  });
+                  
+                  Object.entries(openaqData.pollutants || {}).forEach(([pollutant, data]) => {
+                    const pollutantAQI = data.aqi || calculatePollutantAQI(data.concentration, pollutant);
+                    openaqAQIs.push(pollutantAQI);
+                  });
+                  
+                  const overallTempoAQI = Math.max(...tempoAQIs);
+                  const overallOpenAQAQI = Math.max(...openaqAQIs);
+                  const difference = Math.abs(overallTempoAQI - overallOpenAQAQI);
+                  
+                  return (
+                    <div className="mb-6 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border-l-4 border-yellow-400">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3">Overall AQI Comparison</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="text-center">
+                          <div className="text-sm text-gray-600 mb-1">TEMPO Satellite</div>
+                          <div className={`px-4 py-2 rounded-lg ${getAQIColor(overallTempoAQI)}`}>
+                            <div className="text-2xl font-bold">{overallTempoAQI}</div>
+                            <div className="text-sm">{getAQILevel(overallTempoAQI)}</div>
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-sm text-gray-600 mb-1">OpenAQ Ground</div>
+                          <div className={`px-4 py-2 rounded-lg ${getAQIColor(overallOpenAQAQI)}`}>
+                            <div className="text-2xl font-bold">{overallOpenAQAQI}</div>
+                            <div className="text-sm">{getAQILevel(overallOpenAQAQI)}</div>
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-sm text-gray-600 mb-1">Difference</div>
+                          <div className="px-4 py-2 rounded-lg bg-gray-100">
+                            <div className="text-2xl font-bold text-gray-700">{difference}</div>
+                            <div className="text-sm text-gray-600">AQI points</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+                
+                {/* Pollutant-by-Pollutant Comparison */}
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold text-gray-900">Pollutant Comparison</h3>
+                  {Object.keys({...tempoData.pollutants, ...openaqData.pollutants}).map((pollutant) => {
+                    const tempoPollutantData = tempoData.pollutants?.[pollutant];
+                    const openaqPollutantData = openaqData.pollutants?.[pollutant];
+                    
+                    if (!tempoPollutantData && !openaqPollutantData) return null;
+                    
+                    const tempoAQI = tempoPollutantData ? (tempoPollutantData.aqi || calculatePollutantAQI(tempoPollutantData.concentration, pollutant)) : null;
+                    const openaqAQI = openaqPollutantData ? (openaqPollutantData.aqi || calculatePollutantAQI(openaqPollutantData.concentration, pollutant)) : null;
+                    
+                    return (
+                      <div key={pollutant} className="p-3 bg-gray-50 rounded-lg">
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium text-gray-700">{pollutant}</span>
+                          <div className="flex space-x-4">
+                            {tempoAQI && (
+                              <div className="text-center">
+                                <div className="text-xs text-gray-600">TEMPO</div>
+                                <div className={`px-2 py-1 rounded text-sm font-semibold ${getAQIColor(tempoAQI)}`}>
+                                  {tempoAQI}
+                                </div>
+                              </div>
+                            )}
+                            {openaqAQI && (
+                              <div className="text-center">
+                                <div className="text-xs text-gray-600">OpenAQ</div>
+                                <div className={`px-2 py-1 rounded text-sm font-semibold ${getAQIColor(openaqAQI)}`}>
+                                  {openaqAQI}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    <strong>Note:</strong> TEMPO provides satellite-based measurements with broader coverage, 
+                    while OpenAQ provides ground-based measurements with higher precision. 
+                    Differences may occur due to measurement methods, timing, and spatial resolution.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right Column - Alerts and Forecast */}
@@ -495,6 +661,12 @@ const Dashboard = () => {
                   <span className="text-sm text-gray-600">TEMPO Satellite</span>
                   <span className={`text-sm font-medium ${tempoData ? 'text-green-600' : 'text-red-600'}`}>
                     {tempoData ? 'Active' : 'Offline'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">OpenAQ Ground</span>
+                  <span className={`text-sm font-medium ${openaqData ? 'text-green-600' : 'text-red-600'}`}>
+                    {openaqData ? 'Active' : 'Offline'}
                   </span>
                 </div>
                 <div className="flex justify-between">

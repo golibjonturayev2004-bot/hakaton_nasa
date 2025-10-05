@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { MapPin, RefreshCw, Layers, Eye, EyeOff } from 'lucide-react';
-import { fetchAirQualityData, fetchTempoData } from '../features/airQualitySlice';
+import { RefreshCw, Layers, Eye, EyeOff, MapPin } from 'lucide-react';
+import { fetchAirQualityData, fetchTempoData, fetchOpenAQData } from '../features/airQualitySlice';
 
 const MapView = () => {
   const dispatch = useDispatch();
-  const { currentData, tempoData, loading, error } = useSelector(state => state.airQuality);
+  const { currentData, tempoData, openaqData, loading, error } = useSelector(state => state.airQuality);
   const [selectedLayer, setSelectedLayer] = useState('aqi');
   const [showStations, setShowStations] = useState(true);
-  const [mapCenter, setMapCenter] = useState({ lat: 40.7128, lng: -74.0060 });
+  const [mapCenter] = useState({ lat: 40.7128, lng: -74.0060 });
 
-  const fetchData = () => {
+  const fetchData = useCallback(() => {
     dispatch(fetchAirQualityData({
       lat: mapCenter.lat,
       lon: mapCenter.lng
@@ -19,11 +19,15 @@ const MapView = () => {
       lat: mapCenter.lat,
       lon: mapCenter.lng
     }));
-  };
+    dispatch(fetchOpenAQData({
+      lat: mapCenter.lat,
+      lon: mapCenter.lng
+    }));
+  }, [dispatch, mapCenter.lat, mapCenter.lng]);
 
   useEffect(() => {
     fetchData();
-  }, [mapCenter]);
+  }, [mapCenter, fetchData]);
 
   const getAQIColor = (aqi) => {
     if (aqi <= 50) return 'bg-green-500';
@@ -39,6 +43,67 @@ const MapView = () => {
     if (aqi <= 150) return 'Unhealthy for Sensitive Groups';
     if (aqi <= 200) return 'Unhealthy';
     return 'Very Unhealthy';
+  };
+
+  // Interactive map state
+  const [mapState, setMapState] = useState({
+    zoom: 10,
+    center: { lat: mapCenter.lat, lng: mapCenter.lng },
+    dragging: false,
+    dragStart: null
+  });
+
+  // Handle map interactions
+  const handleMapClick = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // Convert click position to lat/lng (simplified)
+    const lat = mapState.center.lat + (rect.height/2 - y) * 0.001;
+    const lng = mapState.center.lng + (x - rect.width/2) * 0.001;
+    
+    console.log('Map clicked at:', { lat, lng });
+  };
+
+  const handleMouseDown = (e) => {
+    setMapState(prev => ({
+      ...prev,
+      dragging: true,
+      dragStart: { x: e.clientX, y: e.clientY }
+    }));
+  };
+
+  const handleMouseMove = (e) => {
+    if (mapState.dragging && mapState.dragStart) {
+      const deltaX = e.clientX - mapState.dragStart.x;
+      const deltaY = e.clientY - mapState.dragStart.y;
+      
+      setMapState(prev => ({
+        ...prev,
+        center: {
+          lat: prev.center.lat - deltaY * 0.0001,
+          lng: prev.center.lng + deltaX * 0.0001
+        }
+      }));
+    }
+  };
+
+  const handleMouseUp = () => {
+    setMapState(prev => ({
+      ...prev,
+      dragging: false,
+      dragStart: null
+    }));
+  };
+
+  const handleWheel = (e) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -1 : 1;
+    setMapState(prev => ({
+      ...prev,
+      zoom: Math.max(5, Math.min(15, prev.zoom + delta * 0.5))
+    }));
   };
 
   return (
@@ -92,16 +157,34 @@ const MapView = () => {
             >
               <option value="aqi">Air Quality Index</option>
               <option value="tempo">TEMPO Satellite</option>
+              <option value="openaq">OpenAQ Ground</option>
+              <option value="comparison">Data Comparison</option>
               <option value="pollutants">Pollutants</option>
             </select>
           </div>
         </div>
 
-        {/* Map Area */}
+        {/* Interactive Map */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <div className="relative h-96 bg-gray-100 rounded-lg overflow-hidden">
-            {/* Mock Map with Data Points */}
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-green-100">
+          <div className="relative h-96 rounded-lg overflow-hidden">
+            <div 
+              className="w-full h-full bg-gradient-to-br from-blue-100 via-green-50 to-yellow-100 cursor-move select-none"
+              onClick={handleMapClick}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+              onWheel={handleWheel}
+              style={{
+                backgroundImage: `
+                  radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+                  radial-gradient(circle at 80% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 50%),
+                  radial-gradient(circle at 40% 60%, rgba(245, 158, 11, 0.1) 0%, transparent 50%)
+                `,
+                transform: `scale(${1 + (mapState.zoom - 10) * 0.1})`,
+                transformOrigin: 'center center'
+              }}
+            >
               {/* Map Grid */}
               <div className="absolute inset-0 opacity-20">
                 <svg className="w-full h-full">
@@ -114,69 +197,165 @@ const MapView = () => {
                 </svg>
               </div>
 
-              {/* Data Points */}
-              {currentData && (
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                  <div className={`w-8 h-8 rounded-full ${getAQIColor(currentData.aqi || 0)} flex items-center justify-center text-white text-xs font-bold shadow-lg`}>
-                    {currentData.aqi || 0}
+              {/* Interactive Markers */}
+              <div className="absolute inset-0 pointer-events-none">
+                {/* Current Location Marker */}
+                {currentData && (selectedLayer === 'aqi' || selectedLayer === 'comparison') && (
+                  <div 
+                    className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-pointer hover:scale-110 transition-transform duration-200"
+                    style={{
+                      left: '50%',
+                      top: '50%',
+                      transform: 'translate(-50%, -50%)'
+                    }}
+                    title={`Current Location - AQI: ${currentData.aqi || 0} (${getAQILevel(currentData.aqi || 0)})`}
+                  >
+                    <div className={`w-10 h-10 rounded-full ${getAQIColor(currentData.aqi || 0)} flex items-center justify-center text-white text-sm font-bold shadow-lg border-2 border-white`}>
+                      {currentData.aqi || 0}
+                    </div>
+                    <div className="absolute top-12 left-1/2 transform -translate-x-1/2 bg-white px-2 py-1 rounded shadow text-xs whitespace-nowrap">
+                      Current Location
+                    </div>
                   </div>
-                  <div className="absolute top-10 left-1/2 transform -translate-x-1/2 bg-white px-2 py-1 rounded shadow text-xs">
-                    {getAQILevel(currentData.aqi || 0)}
-                  </div>
-                </div>
-              )}
+                )}
 
-              {/* TEMPO Data Points */}
-              {tempoData && tempoData.pollutants && showStations && (
-                <div className="absolute top-1/4 left-1/4">
-                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg">
-                    T
+                {/* TEMPO Satellite Marker */}
+                {tempoData && tempoData.pollutants && showStations && (selectedLayer === 'tempo' || selectedLayer === 'comparison') && (
+                  <div 
+                    className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-pointer hover:scale-110 transition-transform duration-200"
+                    style={{
+                      left: '60%',
+                      top: '40%',
+                      transform: 'translate(-50%, -50%)'
+                    }}
+                    title={`TEMPO Satellite - AQI: ${tempoData.aqi || 'N/A'} (${getAQILevel(tempoData.aqi || 0)})`}
+                  >
+                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg border-2 border-white">
+                      T
+                    </div>
+                    <div className="absolute top-10 left-1/2 transform -translate-x-1/2 bg-white px-2 py-1 rounded shadow text-xs whitespace-nowrap">
+                      TEMPO
+                    </div>
                   </div>
-                  <div className="absolute top-8 left-1/2 transform -translate-x-1/2 bg-white px-2 py-1 rounded shadow text-xs">
-                    TEMPO
-                  </div>
-                </div>
-              )}
+                )}
 
-              {/* Mock Station Points */}
-              {showStations && (
-                <>
-                  <div className="absolute top-1/3 right-1/3">
-                    <div className="w-4 h-4 bg-green-500 rounded-full shadow-lg"></div>
+                {/* OpenAQ Ground Station Marker */}
+                {openaqData && openaqData.pollutants && showStations && (selectedLayer === 'openaq' || selectedLayer === 'comparison') && (
+                  <div 
+                    className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-pointer hover:scale-110 transition-transform duration-200"
+                    style={{
+                      left: '40%',
+                      top: '60%',
+                      transform: 'translate(-50%, -50%)'
+                    }}
+                    title={`OpenAQ Ground - AQI: ${openaqData.aqi || 'N/A'} (${getAQILevel(openaqData.aqi || 0)})`}
+                  >
+                    <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg border-2 border-white">
+                      O
+                    </div>
+                    <div className="absolute top-10 left-1/2 transform -translate-x-1/2 bg-white px-2 py-1 rounded shadow text-xs whitespace-nowrap">
+                      OpenAQ
+                    </div>
                   </div>
-                  <div className="absolute bottom-1/3 left-1/3">
-                    <div className="w-4 h-4 bg-yellow-500 rounded-full shadow-lg"></div>
-                  </div>
-                  <div className="absolute top-2/3 right-1/4">
-                    <div className="w-4 h-4 bg-orange-500 rounded-full shadow-lg"></div>
-                  </div>
-                </>
-              )}
-            </div>
+                )}
 
-            {/* Map Legend */}
-            <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow p-4">
-              <h4 className="text-sm font-medium text-gray-900 mb-2">AQI Legend</h4>
-              <div className="space-y-1">
-                <div className="flex items-center">
-                  <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                  <span className="text-xs text-gray-600">Good (0-50)</span>
+                {/* Additional Mock Stations */}
+                {showStations && selectedLayer === 'pollutants' && (
+                  <>
+                    <div 
+                      className="absolute w-4 h-4 bg-green-500 rounded-full shadow-lg pointer-events-auto cursor-pointer hover:scale-125 transition-transform duration-200"
+                      style={{ left: '65%', top: '35%' }}
+                      title="Station A - AQI: 45 (Good)"
+                    ></div>
+                    <div 
+                      className="absolute w-4 h-4 bg-yellow-500 rounded-full shadow-lg pointer-events-auto cursor-pointer hover:scale-125 transition-transform duration-200"
+                      style={{ left: '35%', top: '65%' }}
+                      title="Station B - AQI: 78 (Moderate)"
+                    ></div>
+                    <div 
+                      className="absolute w-4 h-4 bg-orange-500 rounded-full shadow-lg pointer-events-auto cursor-pointer hover:scale-125 transition-transform duration-200"
+                      style={{ left: '70%', top: '70%' }}
+                      title="Station C - AQI: 125 (Unhealthy for Sensitive)"
+                    ></div>
+                  </>
+                )}
+              </div>
+
+              {/* Map Controls */}
+              <div className="absolute top-4 right-4 bg-white rounded-lg shadow p-2 space-y-2">
+                <button 
+                  onClick={() => setMapState(prev => ({ ...prev, zoom: Math.min(15, prev.zoom + 1) }))}
+                  className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded flex items-center justify-center text-gray-600"
+                  title="Zoom In"
+                >
+                  +
+                </button>
+                <button 
+                  onClick={() => setMapState(prev => ({ ...prev, zoom: Math.max(5, prev.zoom - 1) }))}
+                  className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded flex items-center justify-center text-gray-600"
+                  title="Zoom Out"
+                >
+                  -
+                </button>
+                <div className="text-xs text-center text-gray-500">
+                  {Math.round(mapState.zoom)}x
                 </div>
-                <div className="flex items-center">
-                  <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
-                  <span className="text-xs text-gray-600">Moderate (51-100)</span>
+              </div>
+
+              {/* Map Legend */}
+              <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow p-4">
+                <h4 className="text-sm font-medium text-gray-900 mb-2">AQI Legend</h4>
+                <div className="space-y-1">
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                    <span className="text-xs text-gray-600">Good (0-50)</span>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
+                    <span className="text-xs text-gray-600">Moderate (51-100)</span>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 bg-orange-500 rounded-full mr-2"></div>
+                    <span className="text-xs text-gray-600">Unhealthy for Sensitive (101-150)</span>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+                    <span className="text-xs text-gray-600">Unhealthy (151-200)</span>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 bg-purple-500 rounded-full mr-2"></div>
+                    <span className="text-xs text-gray-600">Very Unhealthy (201+)</span>
+                  </div>
                 </div>
-                <div className="flex items-center">
-                  <div className="w-3 h-3 bg-orange-500 rounded-full mr-2"></div>
-                  <span className="text-xs text-gray-600">Unhealthy for Sensitive (101-150)</span>
+                
+                {/* Data Sources Legend */}
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  <h5 className="text-xs font-medium text-gray-700 mb-2">Data Sources</h5>
+                  <div className="space-y-1">
+                    <div className="flex items-center">
+                      <div className="w-3 h-3 bg-blue-500 rounded-full mr-2 flex items-center justify-center">
+                        <span className="text-white text-xs font-bold">T</span>
+                      </div>
+                      <span className="text-xs text-gray-600">TEMPO Satellite</span>
+                    </div>
+                    <div className="flex items-center">
+                      <div className="w-3 h-3 bg-green-500 rounded-full mr-2 flex items-center justify-center">
+                        <span className="text-white text-xs font-bold">O</span>
+                      </div>
+                      <span className="text-xs text-gray-600">OpenAQ Ground</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center">
-                  <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
-                  <span className="text-xs text-gray-600">Unhealthy (151-200)</span>
+              </div>
+
+              {/* Map Info */}
+              <div className="absolute top-4 left-4 bg-white rounded-lg shadow p-3">
+                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                  <MapPin className="w-4 h-4" />
+                  <span>Interactive Map</span>
                 </div>
-                <div className="flex items-center">
-                  <div className="w-3 h-3 bg-purple-500 rounded-full mr-2"></div>
-                  <span className="text-xs text-gray-600">Very Unhealthy (201+)</span>
+                <div className="text-xs text-gray-500 mt-1">
+                  Drag to move • Scroll to zoom • Click markers for info
                 </div>
               </div>
             </div>
@@ -184,28 +363,65 @@ const MapView = () => {
         </div>
 
         {/* Current Data Summary */}
-        {currentData && (
+        {(currentData || tempoData || openaqData) && (
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Current Location Data</h2>
+            
+            {/* Data Source Comparison */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              {/* Ground Station Data */}
+              {currentData && (
+                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <div className="text-2xl font-bold text-gray-900">{currentData.aqi || 0}</div>
+                  <div className="text-sm text-gray-600">Ground Station AQI</div>
+                  <div className={`text-sm font-medium ${getAQIColor(currentData.aqi || 0).replace('bg-', 'text-')}`}>
+                    {getAQILevel(currentData.aqi || 0)}
+                  </div>
+                </div>
+              )}
+              
+              {/* TEMPO Satellite Data */}
+              {tempoData && tempoData.aqi && (
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <div className="text-2xl font-bold text-blue-900">{tempoData.aqi}</div>
+                  <div className="text-sm text-blue-600">TEMPO Satellite AQI</div>
+                  <div className={`text-sm font-medium ${getAQIColor(tempoData.aqi).replace('bg-', 'text-')}`}>
+                    {getAQILevel(tempoData.aqi)}
+                  </div>
+                </div>
+              )}
+              
+              {/* OpenAQ Ground Data */}
+              {openaqData && openaqData.aqi && (
+                <div className="text-center p-4 bg-green-50 rounded-lg">
+                  <div className="text-2xl font-bold text-green-900">{openaqData.aqi}</div>
+                  <div className="text-sm text-green-600">OpenAQ Ground AQI</div>
+                  <div className={`text-sm font-medium ${getAQIColor(openaqData.aqi).replace('bg-', 'text-')}`}>
+                    {getAQILevel(openaqData.aqi)}
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {/* Station Information */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <div className="text-2xl font-bold text-gray-900">{currentData.aqi || 0}</div>
-                <div className="text-sm text-gray-600">Air Quality Index</div>
-                <div className={`text-sm font-medium ${getAQIColor(currentData.aqi || 0).replace('bg-', 'text-')}`}>
-                  {getAQILevel(currentData.aqi || 0)}
-                </div>
-              </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
                 <div className="text-2xl font-bold text-gray-900">
-                  {currentData.stations ? currentData.stations.length : 0}
+                  {currentData?.stations ? currentData.stations.length : 0}
                 </div>
-                <div className="text-sm text-gray-600">Active Stations</div>
+                <div className="text-sm text-gray-600">Ground Stations</div>
               </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <div className="text-2xl font-bold text-gray-900">
-                  {currentData.sources ? currentData.sources.length : 0}
+              <div className="text-center p-4 bg-blue-50 rounded-lg">
+                <div className="text-2xl font-bold text-blue-900">
+                  {tempoData ? 1 : 0}
                 </div>
-                <div className="text-sm text-gray-600">Data Sources</div>
+                <div className="text-sm text-blue-600">TEMPO Satellite</div>
+              </div>
+              <div className="text-center p-4 bg-green-50 rounded-lg">
+                <div className="text-2xl font-bold text-green-900">
+                  {openaqData?.stations ? openaqData.stations.length : 0}
+                </div>
+                <div className="text-sm text-green-600">OpenAQ Stations</div>
               </div>
             </div>
           </div>

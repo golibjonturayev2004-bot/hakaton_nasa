@@ -12,6 +12,7 @@ const airQualityRoutes = require('./routes/airQuality');
 const tempoRoutes = require('./routes/tempo');
 const weatherRoutes = require('./routes/weather');
 const forecastRoutes = require('./routes/forecast');
+const openaqRoutes = require('./routes/openaq');
 const { router: notificationRoutes, setNotificationService } = require('./routes/notifications');
 const AirQualityService = require('./services/AirQualityService');
 const TempoDataService = require('./services/TempoDataService');
@@ -57,6 +58,7 @@ app.use('/api/air-quality', airQualityRoutes);
 app.use('/api/tempo', tempoRoutes);
 app.use('/api/weather', weatherRoutes);
 app.use('/api/forecast', forecastRoutes);
+app.use('/api/openaq', openaqRoutes);
 app.use('/api/notifications', notificationRoutes);
 
 // Health check endpoint

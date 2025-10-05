@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { MapPin, Bell, Database, Cloud, Settings, Save, RefreshCw, Download, Upload, Trash2, Eye, EyeOff } from 'lucide-react';
+import { MapPin, Bell, Database, Cloud, Settings, Save, RefreshCw, Download, Upload, Eye } from 'lucide-react';
 import { setLocation } from '../features/airQualitySlice';
 
 const SettingsPage = () => {
   const dispatch = useDispatch();
-  const { location } = useSelector(state => state.airQuality);
+  // const { location: currentLocation } = useSelector(state => state.airQuality);
   
   const [settings, setSettings] = useState({
     location: {

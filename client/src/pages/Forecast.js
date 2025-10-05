@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { BarChart3, TrendingUp, Clock, RefreshCw, Filter, Download } from 'lucide-react';
 import { fetchComprehensiveForecast } from '../features/forecastSlice';
@@ -9,17 +9,17 @@ const Forecast = () => {
   const [selectedHours, setSelectedHours] = useState(24);
   const [selectedPollutant, setSelectedPollutant] = useState('PM2.5');
 
-  const fetchForecastData = () => {
+  const fetchForecastData = useCallback(() => {
     dispatch(fetchComprehensiveForecast({
       lat: 40.7128,
       lon: -74.0060,
       hours: selectedHours
     }));
-  };
+  }, [dispatch, selectedHours]);
 
   useEffect(() => {
     fetchForecastData();
-  }, [selectedHours]);
+  }, [fetchForecastData]);
 
   const getAQIColor = (aqi) => {
     if (aqi <= 50) return 'text-green-600 bg-green-100';

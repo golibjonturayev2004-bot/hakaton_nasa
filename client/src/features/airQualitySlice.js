@@ -50,10 +50,27 @@ export const fetchWeatherData = createAsyncThunk(
   }
 );
 
+export const fetchOpenAQData = createAsyncThunk(
+  'airQuality/fetchOpenAQData',
+  async (location, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(`/api/openaq?lat=${location.lat}&lon=${location.lon}&radius=10`);
+      return response.data;
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.statusText || 
+                          error.message || 
+                          'Failed to fetch OpenAQ data';
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
 const initialState = {
   currentData: null,
   tempoData: null,
   weatherData: null,
+  openaqData: null,
   loading: false,
   error: null,
   lastUpdated: null,
@@ -118,6 +135,19 @@ const airQualitySlice = createSlice({
         state.weatherData = action.payload.data;
       })
       .addCase(fetchWeatherData.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Fetch OpenAQ data
+      .addCase(fetchOpenAQData.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchOpenAQData.fulfilled, (state, action) => {
+        state.loading = false;
+        state.openaqData = action.payload.data;
+      })
+      .addCase(fetchOpenAQData.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });
